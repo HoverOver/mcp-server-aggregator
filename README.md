@@ -3,11 +3,6 @@
 This project runs a single **Model Context Protocol (MCP)** server that **aggregates multiple upstream MCP servers**
 and exposes them through **one SSE endpoint**. It **namespaces** all upstream tools to avoid collisions.
 
-## Why
-- One Render free-tier service instead of many
-- Single endpoint for your n8n MCP Client Tool
-- Keep using your existing MCP servers (CoinGecko, CMC, Dexscreener, BlockBeats, Chainlist, CoinTelegraph, Fear & Greed, DeFi Yields, etc.)
-
 ## How it works
 - On startup, the aggregator connects (as a client) to each upstream MCP server via **SSE**.
 - It fetches their **tool lists** and **exposes** them with **prefixed names**, e.g. `web3__token-research`, `dexs__search`.

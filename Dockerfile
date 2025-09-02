@@ -18,5 +18,6 @@ COPY src ./src
 # Expose service port
 EXPOSE 8080
 
-# Run TypeScript entrypoint using ts-node in ESM mode
-CMD ["npx", "ts-node", "--esm", "src/index.ts"]
+# Force ts-node to run instead of node
+ENTRYPOINT ["npx", "ts-node", "--esm"]
+CMD ["src/index.ts"]

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: mcp-aggregator
+    env: node
+    plan: free
+    buildCommand: |
+      if [ -f pnpm-lock.yaml ]; then npm i -g pnpm && pnpm i --frozen-lockfile;         elif [ -f package-lock.json ]; then npm ci;         elif [ -f yarn.lock ]; then corepack enable && yarn install --immutable;         else npm i; fi
+      npm run build || pnpm build || yarn build
+    startCommand: node dist/index.js
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SSE_PATH
+        value: /mcp
+      # Set UPSTREAMS and UPSTREAM_HEADERS in the Render dashboard (they may contain secrets)
+    healthCheckPath: /healthz

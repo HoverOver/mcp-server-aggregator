@@ -7,24 +7,18 @@ WORKDIR /app
 # Copy package.json and package-lock.json (if exists)
 COPY package*.json ./
 
-# Install dependencies (including devDependencies for TypeScript types)
+# Install dependencies (including devDependencies)
 RUN npm install
 
-# Install missing type definitions needed for TypeScript build
-RUN npm install --save-dev @types/express @types/cors @types/node
+# Install ts-node and typescript globally to run TypeScript directly
+RUN npm install -g ts-node typescript
 
 # Copy the rest of the source code
 COPY tsconfig.json ./
 COPY src ./src
 
-# Build TypeScript (skip library type checks to avoid errors)
-RUN npx tsc --skipLibCheck
-
-# Set environment to production
-ENV NODE_ENV=production
-
-# Expose port
+# Expose the port your aggregator uses
 EXPOSE 8080
 
-# Start the server
-CMD ["node", "dist/index.js"]
+# Run the aggregator directly with ts-node (no compilation)
+CMD ["npx", "ts-node", "src/index.ts"]

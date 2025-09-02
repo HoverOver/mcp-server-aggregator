@@ -15,10 +15,10 @@ RUN npm install -g typescript
 COPY tsconfig.json ./
 COPY src ./src
 
-# Build TypeScript into JS
+# Compile TypeScript into JavaScript
 RUN tsc
 
-# Expose port
+# Expose service port
 EXPOSE 8080
 
 # Run the compiled JavaScript instead of TypeScript

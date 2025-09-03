@@ -24,8 +24,9 @@ export class Upstreams {
   }
 
   async connect(cfg: UpstreamConfig) {
+    // Fix: use 'authorization' instead of 'headers' for SSEClientTransportOptions
     const transport = new SSEClientTransport(new URL(cfg.url), {
-      headers: cfg.headers || {},
+      authorization: cfg.headers?.['Authorization'],
       fetch: (input, init) => fetch(input, init)
     });
     const client = new Client({ name: 'mcp-aggregator-client', version: '0.1.0' });
@@ -39,8 +40,11 @@ export class Upstreams {
   async refreshTools(name: string) {
     const client = this.clients.get(name);
     if (!client) throw new Error(`No upstream client: ${name}`);
-    // The client request name follows MCP spec 'tools/list'
-    const res: any = await client.request('tools/list', {});
+    // Fix: pass request object instead of string
+    const res: any = await client.request({ 
+      method: 'tools/list',
+      params: {}
+    });
     const parsed = z.object({ tools: z.array(ToolSchema) }).parse(res);
     const namespaced = parsed.tools.map(t => ({
       ...t,
@@ -61,8 +65,14 @@ export class Upstreams {
   async callTool(prefix: string, toolName: string, args: any) {
     const client = this.clients.get(prefix);
     if (!client) throw new Error(`Unknown upstream prefix: ${prefix}`);
-    // Call upstream tool with original (inner) name
-    const res = await client.request('tools/call', { name: toolName, arguments: args || {} });
+    // Fix: pass request object instead of string
+    const res = await client.request({ 
+      method: 'tools/call', 
+      params: { 
+        name: toolName, 
+        arguments: args || {} 
+      } 
+    });
     return res;
   }
 }

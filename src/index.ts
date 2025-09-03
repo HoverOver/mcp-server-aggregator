@@ -65,8 +65,8 @@ async function main() {
   const router = new Router(logger, upstreamManager);
   router.attach(server);
 
-  // Expose SSE endpoint
-  const transport = new SSEServerTransport({ path: SSE_PATH, keepAlive: true }, app);
+  // Expose SSE endpoint - fix: pass string path instead of object
+  const transport = new SSEServerTransport(SSE_PATH, app);
   await server.connect(transport);
 
   app.listen(PORT, () => logger.info({ port: PORT, path: SSE_PATH }, 'MCP aggregator listening'));

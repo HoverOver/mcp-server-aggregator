@@ -65,13 +65,10 @@ export class Upstreams {
   async callTool(prefix: string, toolName: string, args: any) {
     const client = this.clients.get(prefix);
     if (!client) throw new Error(`Unknown upstream prefix: ${prefix}`);
-    // Fix: pass request object instead of string
-    const res = await client.request({ 
-      method: 'tools/call', 
-      params: { 
-        name: toolName, 
-        arguments: args || {} 
-      } 
+    // Fix: client.request expects method and params as separate arguments
+    const res = await client.request('tools/call', { 
+      name: toolName, 
+      arguments: args || {} 
     });
     return res;
   }

@@ -7,15 +7,15 @@ export class Router {
 
   attach(server: Server) {
     // Tools list: merge with prefixes
-    server.setRequestHandler('tools/list', async () => {
+    server.setRequestHandler('tools/list' as any, async () => {
       const all = await this.upstreams.listAllTools();
       return { tools: all };
     });
 
     // Tool call: route by prefix NAME__toolName
-    server.setRequestHandler('tools/call', async (req) => {
-      const { name, arguments: args } = req.params;
-      const sep = name.indexOf('__');
+    server.setRequestHandler('tools/call' as any, async (req: any) => {
+      const { name, arguments: args } = req.params || {};
+      const sep = name?.indexOf('__') ?? -1;
       if (sep < 0) {
         throw new Error(`Tool name must include prefix separator "__": received "${name}"`);
       }

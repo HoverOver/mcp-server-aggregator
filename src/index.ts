@@ -44,6 +44,7 @@ const app = express();
 app.disable('x-powered-by');
 app.use(cors());
 app.get('/healthz', (_req, res) => res.status(200).send('ok'));
+
 // Optional simple auth for downstream clients
 app.use((req, res, next) => {
   if (!AGGREGATOR_BEARER) return next();
@@ -65,7 +66,7 @@ async function main() {
   const router = new Router(logger, upstreamManager);
   router.attach(server);
 
-  // Expose SSE endpoint - fix: pass string path instead of object
+  // Create SSE transport with the app and path
   const transport = new SSEServerTransport(SSE_PATH, app);
   await server.connect(transport);
 

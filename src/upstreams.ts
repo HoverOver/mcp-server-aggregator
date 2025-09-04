@@ -37,9 +37,9 @@ export class Upstreams {
     if (!client) throw new Error(`No upstream client: ${name}`);
     
     try {
-      // Use the proper request method with schema
-      const res = await client.request(ListToolsRequestSchema, {});
-      const parsed = z.object({ tools: z.array(ToolSchema) }).parse(res);
+      // Use the high-level client method
+      const result = await client.listTools();
+      const parsed = z.object({ tools: z.array(ToolSchema) }).parse(result);
       const namespaced = parsed.tools.map(t => ({
         ...t,
         name: `${name}__${t.name}`,
@@ -65,11 +65,11 @@ export class Upstreams {
     const client = this.clients.get(prefix);
     if (!client) throw new Error(`Unknown upstream prefix: ${prefix}`);
     
-    // Use proper request method with schema
-    const res = await client.request(CallToolRequestSchema, { 
-      name: toolName, 
-      arguments: args || {} 
+    // Use the high-level client method
+    const result = await client.callTool({
+      name: toolName,
+      arguments: args || {}
     });
-    return res;
+    return result;
   }
 }

@@ -24,7 +24,6 @@ export class Upstreams {
   }
 
   async connect(cfg: UpstreamConfig) {
-    // Simple transport creation without options to avoid TypeScript errors
     const transport = new SSEClientTransport(new URL(cfg.url));
     const client = new Client({ name: 'mcp-aggregator-client', version: '0.1.0' });
     await client.connect(transport);
@@ -37,15 +36,21 @@ export class Upstreams {
     const client = this.clients.get(name);
     if (!client) throw new Error(`No upstream client: ${name}`);
     
-    // Call with method string and params object separately
-    const res: any = await client.request('tools/list', {});
-    const parsed = z.object({ tools: z.array(ToolSchema) }).parse(res);
-    const namespaced = parsed.tools.map(t => ({
-      ...t,
-      name: `${name}__${t.name}`,
-      description: `[${name}] ${t.description || ''}`.trim()
-    }));
-    this.toolCache.set(name, namespaced);
+    try {
+      // Try the 3-parameter version first
+      const res: any = await (client.request as any)('tools/list', {}, {});
+      const parsed = z.object({ tools: z.array(ToolSchema) }).parse(res);
+      const namespaced = parsed.tools.map(t => ({
+        ...t,
+        name: `${name}__${t.name}`,
+        description: `[${name}] ${t.description || ''}`.trim()
+      }));
+      this.toolCache.set(name, namespaced);
+    } catch (error) {
+      this.logger.error({ upstream: name, error }, 'Failed to refresh tools');
+      // Set empty tools array if refresh fails
+      this.toolCache.set(name, []);
+    }
   }
 
   async listAllTools() {
@@ -60,11 +65,11 @@ export class Upstreams {
     const client = this.clients.get(prefix);
     if (!client) throw new Error(`Unknown upstream prefix: ${prefix}`);
     
-    // Call with method string and params object separately
-    const res = await client.request('tools/call', { 
+    // Use any type to bypass strict typing
+    const res = await (client.request as any)('tools/call', { 
       name: toolName, 
       arguments: args || {} 
-    });
+    }, {});
     return res;
   }
 }

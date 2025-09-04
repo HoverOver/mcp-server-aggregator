@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type pino from 'pino';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 const ToolSchema = z.object({
   name: z.string(),
@@ -37,8 +38,8 @@ export class Upstreams {
     if (!client) throw new Error(`No upstream client: ${name}`);
     
     try {
-      // Try the 3-parameter version first
-      const res: any = await (client.request as any)('tools/list', {}, {});
+      // Use the proper request method with schema
+      const res = await client.request(ListToolsRequestSchema, {});
       const parsed = z.object({ tools: z.array(ToolSchema) }).parse(res);
       const namespaced = parsed.tools.map(t => ({
         ...t,
@@ -65,11 +66,11 @@ export class Upstreams {
     const client = this.clients.get(prefix);
     if (!client) throw new Error(`Unknown upstream prefix: ${prefix}`);
     
-    // Use any type to bypass strict typing
-    const res = await (client.request as any)('tools/call', { 
+    // Use proper request method with schema
+    const res = await client.request(CallToolRequestSchema, { 
       name: toolName, 
       arguments: args || {} 
-    }, {});
+    });
     return res;
   }
 }

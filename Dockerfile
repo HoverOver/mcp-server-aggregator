@@ -20,8 +20,8 @@ COPY src ./src
 # Compile TypeScript to JavaScript
 RUN npx tsc
 
-# Expose your service port (adjust if not 3000)
-EXPOSE 3000
+# Expose your service port (matches PORT env var)
+EXPOSE 8080
 
 # Start the server
 CMD ["node", "dist/index.js"]

@@ -42,7 +42,12 @@ const upstreams = upstreamSpec.split(',').map(s => s.trim()).filter(Boolean).map
 
 const app = express();
 app.disable('x-powered-by');
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  exposedHeaders: ['Mcp-Session-Id'],
+  allowedHeaders: ['Content-Type', 'mcp-session-id']
+}));
+app.use(express.json());
 app.get('/healthz', (_req, res) => res.status(200).send('ok'));
 
 // Optional simple auth for downstream clients
@@ -53,6 +58,9 @@ app.use((req, res, next) => {
   if (req.path === '/healthz') return next();
   res.status(401).json({ error: 'Unauthorized' });
 });
+
+// Store transports by session
+const transports: Record<string, SSEServerTransport> = {};
 
 async function main() {
   const server = new Server(
@@ -66,9 +74,51 @@ async function main() {
   const router = new Router(logger, upstreamManager);
   router.attach(server);
 
-  // Create SSE transport with the app and path
-  const transport = new SSEServerTransport(SSE_PATH, app);
-  await server.connect(transport);
+  // SSE endpoint - GET request to establish SSE connection
+  app.get(SSE_PATH, async (req, res) => {
+    try {
+      const transport = new SSEServerTransport('/messages', res);
+      transports[transport.sessionId] = transport;
+      
+      // Clean up transport when connection is closed
+      res.on('close', () => {
+        delete transports[transport.sessionId];
+      });
+      
+      await server.connect(transport);
+    } catch (error) {
+      logger.error({ error }, 'Error setting up SSE transport');
+      if (!res.headersSent) {
+        res.status(500).send('Internal Server Error');
+      }
+    }
+  });
+
+  // Message endpoint - POST requests for MCP messages
+  app.post('/messages', async (req, res) => {
+    const sessionId = req.query.sessionId as string;
+    const transport = transports[sessionId];
+    
+    if (transport) {
+      try {
+        await transport.handlePostMessage(req, res, req.body);
+      } catch (error) {
+        logger.error({ error, sessionId }, 'Error handling POST message');
+        if (!res.headersSent) {
+          res.status(500).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32603,
+              message: 'Internal server error',
+            },
+            id: null,
+          });
+        }
+      }
+    } else {
+      res.status(400).send('No transport found for sessionId');
+    }
+  });
 
   app.listen(PORT, () => logger.info({ port: PORT, path: SSE_PATH }, 'MCP aggregator listening'));
 }
